@@ -58,7 +58,6 @@ function goGaode(){const from=current?current.wgs.lng+","+current.wgs.lat+",我�
 function goBaidu(){const d=gcj02ToBd09(DEST.lat,DEST.lng);if(current){const o=current.bd;location.href="https://api.map.baidu.com/direction?origin="+o.lat+","+o.lng+"&destination="+d.lat+","+d.lng+"&mode=driving&region=北京&output=html"}else{const app="baidumap://map/direction?origin=我的位置&destination=name:"+encodeURIComponent(DEST.name)+"|latlng:"+d.lat+","+d.lng+"&coord_type=bd09ll&mode=driving&src=qr";const web="https://api.map.baidu.com/direction?destination="+d.lat+","+d.lng+"&mode=driving&region=北京&output=html";if(isWeChat){location.href=web;return}location.href=app;setTimeout(()=>location.href=web,1000)}}
 document.getElementById("gaode").onclick=goGaode;
 document.getElementById("baidu").onclick=goBaidu;
-document.getElementById("didi").onclick=goDidi;
 document.getElementById("copy").onclick=async()=>{try{await navigator.clipboard.writeText(DEST.address);alert("已复制：\n"+DEST.address)}catch(e){alert(DEST.address)}};
 getCurrent();
 </script>
