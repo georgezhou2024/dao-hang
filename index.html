@@ -31,127 +31,52 @@ button,a.btn{appearance:none;border:0;text-decoration:none;width:100%;min-height
   <div class="badge">T+MALL · EAST GATE</div>
   <h1>三里屯一号场 T+MALL（东门）</h1>
   <div class="address">北京市朝阳区南三里屯路与南三里屯中街交叉口西北约80米</div>
-
   <div class="location" id="status">正在获取您的当前位置…</div>
-
   <div class="wx" id="wxTip">微信内置浏览器可能限制唤起地图 App。若点击后没有跳转，请点右上角「···」→「在浏览器打开」。</div>
-
   <div class="buttons">
     <button class="gaode" id="gaode">🚗 高德地图 · 开始导航</button>
     <button class="baidu" id="baidu">🧭 百度地图 · 开始导航</button>
     <button class="didi" id="didi">🚕 滴滴 · 打车到这里</button>
     <button class="secondary" id="copy">📋 复制目的地地址</button>
   </div>
-
   <div class="note">打开后会自动使用您当前的位置作为出发点。首次使用请允许浏览器访问定位。</div>
   <div class="footer">导航目的地：三里屯一号场 T+MALL（东门）</div>
 </main>
-
 <script>
-const DEST={
-  name:"三里屯一号场 T+MALL（东门）",
-  address:"北京市朝阳区南三里屯路与南三里屯中街交叉口西北约80米",
-  lat:39.931566,
-  lng:116.455110
-};
-
+const DEST={name:"三里屯一号场 T+MALL（东门）",address:"北京市朝阳区南三里屯路与南三里屯中街交叉口西北约80米",lat:39.931566,lng:116.455110};
 let current=null;
 const statusEl=document.getElementById("status");
 const ua=navigator.userAgent.toLowerCase();
 const isWeChat=ua.includes("micromessenger");
 if(isWeChat) document.getElementById("wxTip").style.display="block";
-
-function setStatus(text,ok=false){
-  statusEl.innerHTML=ok ? "📍 <strong>"+text+"</strong>" : text;
-}
-
-function outOfChina(lat,lng){
-  return lng<72.004||lng>137.8347||lat<0.8293||lat>55.8271;
-}
-function transformLat(x,y){
-  let r=-100+2*x+3*y+.2*y*y+.1*x*y+.2*Math.sqrt(Math.abs(x));
-  r+=(20*Math.sin(6*x*Math.PI)+20*Math.sin(2*x*Math.PI))*2/3;
-  r+=(20*Math.sin(y*Math.PI)+40*Math.sin(y/3*Math.PI))*2/3;
-  r+=(160*Math.sin(y/12*Math.PI)+320*Math.sin(y*Math.PI/30))*2/3;
-  return r;
-}
-function transformLng(x,y){
-  let r=300+x+2*y+.1*x*x+.1*x*y+.1*Math.sqrt(Math.abs(x));
-  r+=(20*Math.sin(6*x*Math.PI)+20*Math.sin(2*x*Math.PI))*2/3;
-  r+=(20*Math.sin(x*Math.PI)+40*Math.sin(x/3*Math.PI))*2/3;
-  r+=(150*Math.sin(x/12*Math.PI)+300*Math.sin(x/30*Math.PI))*2/3;
-  return r;
-}
-function wgs84ToGcj02(lat,lng){
-  if(outOfChina(lat,lng)) return {lat,lng};
-  const a=6378245.0,ee=0.00669342162296594323;
-  let dLat=transformLat(lng-105,lat-35),dLng=transformLng(lng-105,lat-35);
-  const radLat=lat/180*Math.PI,magic=Math.sin(radLat);
-  const sqrt=Math.sqrt(1-ee*magic*magic);
-  dLat=(dLat*180)/(a*(1-ee)/(sqrt*sqrt)*Math.PI);
-  dLng=(dLng*180)/(a/sqrt*Math.cos(radLat)*Math.PI);
-  return {lat:lat+dLat,lng:lng+dLng};
-}
-function gcj02ToBd09(lat,lng){
-  const z=Math.sqrt(lng*lng+lat*lat)+0.00002*Math.sin(lat*Math.PI*3000/180);
-  const theta=Math.atan2(lat,lng)+0.000003*Math.cos(lng*Math.PI*3000/180);
-  return {lat:z*Math.sin(theta)+0.006,lng:z*Math.cos(theta)+0.0065};
-}
-function getCurrent(){
-  if(!navigator.geolocation){
-    setStatus("浏览器不支持定位，将使用地图 App 的“我的位置”");
-    return;
-  }
-  navigator.geolocation.getCurrentPosition(
-    p=>{
-      const g=wgs84ToGcj02(p.coords.latitude,p.coords.longitude);
-      current={wgs:g,bd:gcj02ToBd09(g.lat,g.lng)};
-      setStatus("已获取当前位置，可直接导航",true);
-    },
-    ()=>setStatus("未获得定位权限，点击导航后地图 App 将尝试使用“我的位置”"),
-    {enableHighAccuracy:true,timeout:8000,maximumAge:60000}
-  );
-}
-function goGaode(){
-  const from=current ? current.wgs.lng+","+current.wgs.lat+",我的位置" : "";
-  const to=DEST.lng+","+DEST.lat+","+encodeURIComponent(DEST.name);
-  const web="https://uri.amap.com/navigation?from="+encodeURIComponent(from)+"&to="+encodeURIComponent(to)+"&mode=car&policy=1&coordinate=gaode&callnative=1";
-  const app="amapuri://route/plan/?sourceApplication=qr&dname="+encodeURIComponent(DEST.name)+"&dlat="+DEST.lat+"&dlon="+DEST.lng+"&dev=0";
-  if(isWeChat){location.href=web;return}
-  location.href=app;
-  setTimeout(()=>{location.href=web},900);
-}
-function goBaidu(){
-  const d=gcj02ToBd09(DEST.lat,DEST.lng);
-  if(current){
-    const o=current.bd;
-    const web="https://api.map.baidu.com/direction?origin="+o.lat+","+o.lng+"&destination="+d.lat+","+d.lng+"&mode=driving&region=北京&output=html";
-    location.href=web;
-  }else{
-    const app="baidumap://map/direction?origin=我的位置&destination=name:"+encodeURIComponent(DEST.name)+"|latlng:"+d.lat+","+d.lng+"&coord_type=bd09ll&mode=driving&src=qr";
-    const web="https://api.map.baidu.com/direction?destination="+d.lat+","+d.lng+"&mode=driving&region=北京&output=html";
-    if(isWeChat){location.href=web;return}
-    location.href=app;
-    setTimeout(()=>{location.href=web},900);
-  }
-}
+function setStatus(text,ok=false){statusEl.innerHTML=ok?"📍 <strong>"+text+"</strong>":text}
+function outOfChina(lat,lng){return lng<72.004||lng>137.8347||lat<0.8293||lat>55.8271}
+function transformLat(x,y){let r=-100+2*x+3*y+.2*y*y+.1*x*y+.2*Math.sqrt(Math.abs(x));r+=(20*Math.sin(6*x*Math.PI)+20*Math.sin(2*x*Math.PI))*2/3;r+=(20*Math.sin(y*Math.PI)+40*Math.sin(y/3*Math.PI))*2/3;r+=(160*Math.sin(y/12*Math.PI)+320*Math.sin(y*Math.PI/30))*2/3;return r}
+function transformLng(x,y){let r=300+x+2*y+.1*x*x+.1*x*y+.1*Math.sqrt(Math.abs(x));r+=(20*Math.sin(6*x*Math.PI)+20*Math.sin(2*x*Math.PI))*2/3;r+=(20*Math.sin(x*Math.PI)+40*Math.sin(x/3*Math.PI))*2/3;r+=(150*Math.sin(x/12*Math.PI)+300*Math.sin(x/30*Math.PI))*2/3;return r}
+function wgs84ToGcj02(lat,lng){if(outOfChina(lat,lng))return{lat,lng};const a=6378245,ee=.006693421622965943;let dLat=transformLat(lng-105,lat-35),dLng=transformLng(lng-105,lat-35);const radLat=lat/180*Math.PI,magic=Math.sin(radLat),sqrt=Math.sqrt(1-ee*magic*magic);dLat=dLat*180/(a*(1-ee)/(sqrt*sqrt)*Math.PI);dLng=dLng*180/(a/sqrt*Math.cos(radLat)*Math.PI);return{lat:lat+dLat,lng:lng+dLng}}
+function gcj02ToBd09(lat,lng){const z=Math.sqrt(lng*lng+lat*lat)+.00002*Math.sin(lat*Math.PI*3000/180),theta=Math.atan2(lat,lng)+.000003*Math.cos(lng*Math.PI*3000/180);return{lat:z*Math.sin(theta)+.006,lng:z*Math.cos(theta)+.0065}}
+function getCurrent(){if(!navigator.geolocation){setStatus("浏览器不支持定位，将使用地图 App 的“我的位置”");return}navigator.geolocation.getCurrentPosition(p=>{const g=wgs84ToGcj02(p.coords.latitude,p.coords.longitude);current={wgs:g,bd:gcj02ToBd09(g.lat,g.lng)};setStatus("已获取当前位置，可直接导航",true)},()=>setStatus("未获得定位权限，点击导航后地图 App 将尝试使用“我的位置”"),{enableHighAccuracy:true,timeout:8000,maximumAge:60000})}
+function goGaode(){const from=current?current.wgs.lng+","+current.wgs.lat+",我的位置":"";const to=DEST.lng+","+DEST.lat+","+encodeURIComponent(DEST.name);const web="https://uri.amap.com/navigation?from="+encodeURIComponent(from)+"&to="+encodeURIComponent(to)+"&mode=car&policy=1&coordinate=gaode&callnative=1";const app="amapuri://route/plan/?sourceApplication=qr&dname="+encodeURIComponent(DEST.name)+"&dlat="+DEST.lat+"&dlon="+DEST.lng+"&dev=0";if(isWeChat){location.href=web;return}location.href=app;setTimeout(()=>location.href=web,1000)}
+function goBaidu(){const d=gcj02ToBd09(DEST.lat,DEST.lng);if(current){const o=current.bd;location.href="https://api.map.baidu.com/direction?origin="+o.lat+","+o.lng+"&destination="+d.lat+","+d.lng+"&mode=driving&region=北京&output=html"}else{const app="baidumap://map/direction?origin=我的位置&destination=name:"+encodeURIComponent(DEST.name)+"|latlng:"+d.lat+","+d.lng+"&coord_type=bd09ll&mode=driving&src=qr";const web="https://api.map.baidu.com/direction?destination="+d.lat+","+d.lng+"&mode=driving&region=北京&output=html";if(isWeChat){location.href=web;return}location.href=app;setTimeout(()=>location.href=web,1000)}}
 function goDidi(){
   const text=DEST.name+"，"+DEST.address;
   navigator.clipboard?.writeText(text).catch(()=>{});
-  if(/iphone|ipad|ipod/.test(ua)){
-    location.href="didi://";
-  }else{
-    location.href="didi://";
+  if(isWeChat){
+    alert("微信内可能无法直接唤起滴滴。已复制目的地，请点击右上角「···」→「在浏览器打开」，再点击滴滴按钮。");
+    return;
   }
-  setTimeout(()=>{alert("已复制目的地。若滴滴 App 没有自动打开，请打开滴滴，在目的地输入：\n"+text)},900);
+  const start=Date.now();
+  location.href="diditaxi://";
+  setTimeout(()=>{
+    if(Date.now()-start<1800){
+      alert("已复制目的地。如果滴滴没有自动打开，请确认手机已安装滴滴出行，再重新点击。");
+    }
+  },1200);
 }
 document.getElementById("gaode").onclick=goGaode;
 document.getElementById("baidu").onclick=goBaidu;
 document.getElementById("didi").onclick=goDidi;
-document.getElementById("copy").onclick=async()=>{
-  try{await navigator.clipboard.writeText(DEST.address);alert("已复制：\n"+DEST.address)}
-  catch(e){alert(DEST.address)}
-};
+document.getElementById("copy").onclick=async()=>{try{await navigator.clipboard.writeText(DEST.address);alert("已复制：\n"+DEST.address)}catch(e){alert(DEST.address)}};
 getCurrent();
 </script>
 </body>
