@@ -19,7 +19,6 @@ h1{font-size:25px;line-height:1.35;margin:16px 0 8px}
 button,a.btn{appearance:none;border:0;text-decoration:none;width:100%;min-height:54px;border-radius:15px;display:flex;align-items:center;justify-content:center;gap:9px;font-size:16px;font-weight:600;cursor:pointer}
 .gaode{background:#1677ff;color:#fff}
 .baidu{background:#2d7ff9;color:#fff}
-.didi{background:#ff7a00;color:#fff}
 .secondary{background:var(--card);border:1px solid var(--line)!important;color:#eee}
 .note{margin-top:20px;color:#777;font-size:12px;line-height:1.7}
 .wx{display:none;margin:14px 0;padding:12px;border-radius:12px;background:#2a2115;color:#e6c980;font-size:12px;line-height:1.6}
@@ -36,7 +35,6 @@ button,a.btn{appearance:none;border:0;text-decoration:none;width:100%;min-height
   <div class="buttons">
     <button class="gaode" id="gaode">🚗 高德地图 · 开始导航</button>
     <button class="baidu" id="baidu">🧭 百度地图 · 开始导航</button>
-    <button class="didi" id="didi">🚕 滴滴 · 打车到这里</button>
     <button class="secondary" id="copy">📋 复制目的地地址</button>
   </div>
   <div class="note">打开后会自动使用您当前的位置作为出发点。首次使用请允许浏览器访问定位。</div>
@@ -58,42 +56,6 @@ function gcj02ToBd09(lat,lng){const z=Math.sqrt(lng*lng+lat*lat)+.00002*Math.sin
 function getCurrent(){if(!navigator.geolocation){setStatus("浏览器不支持定位，将使用地图 App 的“我的位置”");return}navigator.geolocation.getCurrentPosition(p=>{const g=wgs84ToGcj02(p.coords.latitude,p.coords.longitude);current={wgs:g,bd:gcj02ToBd09(g.lat,g.lng)};setStatus("已获取当前位置，可直接导航",true)},()=>setStatus("未获得定位权限，点击导航后地图 App 将尝试使用“我的位置”"),{enableHighAccuracy:true,timeout:8000,maximumAge:60000})}
 function goGaode(){const from=current?current.wgs.lng+","+current.wgs.lat+",我的位置":"";const to=DEST.lng+","+DEST.lat+","+encodeURIComponent(DEST.name);const web="https://uri.amap.com/navigation?from="+encodeURIComponent(from)+"&to="+encodeURIComponent(to)+"&mode=car&policy=1&coordinate=gaode&callnative=1";const app="amapuri://route/plan/?sourceApplication=qr&dname="+encodeURIComponent(DEST.name)+"&dlat="+DEST.lat+"&dlon="+DEST.lng+"&dev=0";if(isWeChat){location.href=web;return}location.href=app;setTimeout(()=>location.href=web,1000)}
 function goBaidu(){const d=gcj02ToBd09(DEST.lat,DEST.lng);if(current){const o=current.bd;location.href="https://api.map.baidu.com/direction?origin="+o.lat+","+o.lng+"&destination="+d.lat+","+d.lng+"&mode=driving&region=北京&output=html"}else{const app="baidumap://map/direction?origin=我的位置&destination=name:"+encodeURIComponent(DEST.name)+"|latlng:"+d.lat+","+d.lng+"&coord_type=bd09ll&mode=driving&src=qr";const web="https://api.map.baidu.com/direction?destination="+d.lat+","+d.lng+"&mode=driving&region=北京&output=html";if(isWeChat){location.href=web;return}location.href=app;setTimeout(()=>location.href=web,1000)}}
-const DIDI_API="https://didi-tmall-api.13261209991.workers.dev";
-async function goDidi(){
-  const text=DEST.name+"，"+DEST.address;
-  if(isWeChat){
-    alert("微信内可能限制直接唤起滴滴。请点右上角「···」→「在浏览器打开」，再点击“滴滴”按钮。");
-    return;
-  }
-  if(!current){
-    setStatus("正在获取当前位置，请允许定位…");
-    if(!navigator.geolocation){alert("当前浏览器不支持定位，无法生成滴滴路线。");return}
-    try{
-      const p=await new Promise((resolve,reject)=>navigator.geolocation.getCurrentPosition(resolve,reject,{enableHighAccuracy:true,timeout:10000,maximumAge:60000}));
-      const g=wgs84ToGcj02(p.coords.latitude,p.coords.longitude);
-      current={wgs:g,bd:gcj02ToBd09(g.lat,g.lng)};
-      setStatus("已获取当前位置",true);
-    }catch(e){
-      alert("无法获取当前位置。请允许浏览器定位后，再点击“滴滴”。");
-      return;
-    }
-  }
-  try{
-    setStatus("正在生成滴滴叫车链接…");
-    const r=await fetch(DIDI_API,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({from_lat:current.wgs.lat,from_lng:current.wgs.lng})});
-    const data=await r.json().catch(()=>({}));
-    if(!r.ok||!data.url) throw new Error(data.error||"未返回滴滴链接");
-    setStatus("正在打开滴滴…");
-    location.href=data.url;
-    setTimeout(()=>{
-      navigator.clipboard?.writeText(data.url).catch(()=>{});
-      alert("如果滴滴没有自动打开，请复制已生成的链接，在手机浏览器中打开。");
-    },1800);
-  }catch(e){
-    console.error(e);
-    alert("滴滴链接生成失败："+(e.message||"请稍后重试"));
-  }
-}
 document.getElementById("gaode").onclick=goGaode;
 document.getElementById("baidu").onclick=goBaidu;
 document.getElementById("didi").onclick=goDidi;
