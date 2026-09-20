@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>导航：三里屯一号场 T+MALL(东门)</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;font-family:system-ui}
+body{text-align:center;margin-top:60px;padding:0 20px;}
+h2{margin-bottom:12px;color:#222;font-size:22px;}
+.tip{color:#d93025;margin:10px 0 30px;font-size:14px;display:none;line-height:1.5;}
+button{display:block;width:260px;padding:16px;margin:12px auto;font-size:17px;border:none;border-radius:10px;color:#fff;cursor:pointer;}
+.btn-gaode{background:#2563eb;}
+.btn-baidu{background:#2982ff;}
+.copy-btn{background:#666;width:200px;padding:10px;font-size:14px;margin-top:20px;}
+</style>
+</head>
+<body>
+<h2>三里屯一号场 T+MALL(东门)</h2>
+<p class="tip" id="wxTip">⚠️微信内置浏览器限制，无法直接唤起第三方App<br>请点右上角「···」→【在浏览器打开】，即可一键唤起高德/百度地图App导航</p>
+
+<button class="btn-gaode" id="btnGaode">🚗 高德地图（直接导航）</button>
+<button class="btn-baidu" id="btnBaidu">🚗 百度地图（直接导航）</button>
+<button class="copy-btn" id="btnCopy">📋 复制终点地址</button>
+
+<script>
+const destName = "三里屯一号场 T+MALL(东门)";
+const gcjLat = 39.932121;
+const gcjLng = 116.454918;
+
+function gcj02ToBd09(lat, lng) {
+    const x = lng, y = lat;
+    const z = Math.sqrt(x*x + y*y) + 0.00002 * Math.sin(y * Math.PI * 3000.0 / 180.0);
+    const theta = Math.atan2(y, x) + 0.000003 * Math.cos(x * Math.PI * 3000.0 / 180.0);
+    const bdLng = z * Math.cos(theta) + 0.0065;
+    const bdLat = z * Math.sin(theta) + 0.006;
+    return {lat: bdLat, lng: bdLng};
+}
+const bd09 = gcj02ToBd09(gcjLat, gcjLng);
+const isWx = navigator.userAgent.toLowerCase().indexOf('micromessenger') !== -1;
+
+if(isWx){
+    document.getElementById('wxTip').style.display = "block";
+}
+
+document.getElementById('btnGaode').onclick = function(){
+    const ua = navigator.userAgent.toLowerCase();
+    let url;
+    if(/iphone|ipad|ipod/.test(ua)){
+        url = `iosamap://navi?sourceApplication=web&poiname=${destName}&lat=${gcjLat}&lon=${gcjLng}&dev=0`;
+    }else{
+        url = `amapuri://route/plan/?sourceApplication=web&dname=${destName}&dlat=${gcjLat}&dlon=${gcjLng}&dev=0`;
+    }
+    const fallback = `https://uri.amap.com/marker?position=${gcjLng},${gcjLat}&name=${destName}`;
+    location.href = url;
+    setTimeout(()=>{location.href=fallback}, 600);
+}
+
+document.getElementById('btnBaidu').onclick = function(){
+    const destNameEncode = encodeURIComponent(destName);
+    const baiduWebMarker = `https://api.map.baidu.com/marker?location=${bd09.lat},${bd09.lng}&title=${destNameEncode}&output=html&src=web`;
+    const baiduScheme = `baidumap://map/direction?origin=我的位置&destination=name:${destName}|latlng:${bd09.lat},${bd09.lng}&coord_type=bd09ll&mode=driving&src=web`;
+
+    if(isWx){
+        location.href = baiduWebMarker;
+    }else{
+        location.href = baiduScheme;
+        setTimeout(()=>{location.href=baiduWebMarker},600);
+    }
+}
+
+document.getElementById('btnCopy').onclick = async function(){
+    try{
+        await navigator.clipboard.writeText(destName);
+        alert("✅地址已复制："+destName);
+    }catch(e){
+        alert("复制失败，请手动复制："+destName);
+    }
+</script>
+</body>
+</html>
