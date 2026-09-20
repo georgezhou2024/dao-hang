@@ -62,16 +62,20 @@ function goDidi(){
   const text=DEST.name+"，"+DEST.address;
   navigator.clipboard?.writeText(text).catch(()=>{});
   if(isWeChat){
-    alert("微信内可能无法直接唤起滴滴。已复制目的地，请点击右上角「···」→「在浏览器打开」，再点击滴滴按钮。");
+    alert("微信内可能限制直接打开滴滴。目的地已复制，请点右上角「···」→「在浏览器打开」，再点击“滴滴”按钮。");
     return;
   }
-  const start=Date.now();
-  location.href="diditaxi://";
-  setTimeout(()=>{
-    if(Date.now()-start<1800){
-      alert("已复制目的地。如果滴滴没有自动打开，请确认手机已安装滴滴出行，再重新点击。");
-    }
-  },1200);
+  // 不再设置任何百度/高德 fallback，只尝试打开滴滴。
+  // Android 使用 intent 定向到滴滴包名；iPhone/iPad 使用滴滴 URL Scheme。
+  const isAndroid=/android/.test(ua);
+  const isIOS=/iphone|ipad|ipod/.test(ua);
+  if(isAndroid){
+    location.href="intent://open#Intent;scheme=didi;package=com.xiaojukeji.didi;end";
+  }else if(isIOS){
+    location.href="didi://";
+  }else{
+    alert("请使用手机打开本页面。目的地已复制："+text);
+  }
 }
 document.getElementById("gaode").onclick=goGaode;
 document.getElementById("baidu").onclick=goBaidu;
