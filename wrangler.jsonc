@@ -1,9 +1,0 @@
-{
-  "name": "didi-tmall-api",
-  "main": "worker/didi-worker.js",
-  "compatibility_date": "2026-09-21",
-  "workers_dev": true,
-  "secrets": {
-    "required": ["DIDI_MCP_KEY"]
-  }
-}
